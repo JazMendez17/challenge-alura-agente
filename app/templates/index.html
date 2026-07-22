@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BimBam Buy - Agente de Atencion</title>
+    <style>
+        /* Estilos bien basicos, los hice yo mismo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message .bubble {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .message.user .bubble {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .bubble {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .fuente-tag {
+            display: inline-block;
+            background: #e8e8ff;
+            color: #667eea;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-right: 5px;
+            margin-top: 5px;
+        }
+
+        .input-area {
+            padding: 15px 30px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            background: white;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-area input:focus {
+            border-color: #667eea;
+        }
+
+        .input-area button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .input-area button:hover {
+            transform: scale(1.05);
+        }
+
+        .input-area button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sugerencias {
+            padding: 10px 30px 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+
+        .sugerencias p {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .sugerencia-btn {
+            display: inline-block;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            padding: 6px 12px;
+            margin: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .sugerencia-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 10px;
+            color: #888;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .docs-info {
+            padding: 8px 30px;
+            background: #f0f0ff;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .docs-info span {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px 30px;
+            background: #f8f9fa;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .error-msg {
+            color: #e74c3c;
+            font-size: 12px;
+            padding: 0 30px 10px;
+            display: none;
+        }
+
+        .error-msg.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 BimBam Buy</h1>
+            <p>Agente de Atencion al Cliente - Pregunta sobre reembolsos, envios, pagos y mas</p>
+        </div>
+
+        <div class="docs-info" id="docsInfo">
+            Cargando documentos...
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="message bot">
+                <div class="bubble">
+                    Hola! Soy el asistente de BimBam Buy. Puedo ayudarte con informacion sobre:<br>
+                    • Reembolsos y devoluciones<br>
+                    • Programa de afiliados<br>
+                    • Envios y costos<br>
+                    • Metodos de pago<br>
+                    • Garantias<br><br>
+                    Escribe tu pregunta o selecciona una sugerencia 😊
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">Escribiendo respuesta</div>
+        <div class="error-msg" id="errorMsg">Error al conectar con el servidor. Intenta de nuevo.</div>
+
+        <div class="sugerencias" id="sugerencias">
+            <p>💡 Preguntas sugeridas:</p>
+            <div id="sugerenciasContainer">Cargando...</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="preguntaInput" placeholder="Escribe tu pregunta aqui..." autofocus>
+            <button id="enviarBtn" onclick="enviarPregunta()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        // Cargar documentos y sugerencias al inicio
+        cargarDocumentos();
+        cargarSugerencias();
+
+        // Enter para enviar
+        document.getElementById('preguntaInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enviarPregunta();
+            }
+        });
+
+        function cargarDocumentos() {
+            fetch('/api/documentos')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.documentos && data.documentos.length > 0) {
+                        const docs = data.documentos.map(d => d.replace(/_/g, ' ').replace('.pdf', '')).join(', ');
+                        document.getElementById('docsInfo').innerHTML = '📚 Documentos cargados: <span>' + docs + '</span>';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('docsInfo').innerHTML = '📚 Documentos disponibles';
+                });
+        }
+
+        function cargarSugerencias() {
+            fetch('/api/sugerencias')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('sugerenciasContainer');
+                    container.innerHTML = '';
+                    data.sugerencias.forEach(s => {
+                        const btn = document.createElement('span');
+                        btn.className = 'sugerencia-btn';
+                        btn.textContent = s;
+                        btn.onclick = function() {
+                            document.getElementById('preguntaInput').value = s;
+                            enviarPregunta();
+                        };
+                        container.appendChild(btn);
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('sugerenciasContainer').innerHTML = 'No se pudieron cargar las sugerencias';
+                });
+        }
+
+        function enviarPregunta() {
+            const input = document.getElementById('preguntaInput');
+            const pregunta = input.value.trim();
+            if (!pregunta) return;
+
+            // Mostrar mensaje del usuario
+            agregarMensaje(pregunta, 'user');
+            input.value = '';
+
+            // Mostrar indicador de escritura
+            document.getElementById('typingIndicator').classList.add('active');
+            document.getElementById('errorMsg').classList.remove('active');
+            document.getElementById('enviarBtn').disabled = true;
+
+            // Llamar al API
+            fetch('/api/preguntar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ pregunta: pregunta })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('typingIndicator').classList.remove('active');
+
+                let respuesta = data.respuesta || 'No se encontro informacion.';
+                let fuentes = data.fuentes || [];
+
+                // Formatear fuentes como tags
+                let fuentesHTML = '';
+                if (fuentes.length > 0) {
+                    fuentesHTML = '<br>' + fuentes.map(f =>
+                        '<span class="fuente-tag">📄 ' + f.replace(/_/g, ' ').replace('.pdf', '') + '</span>'
+                    ).join('');
+                }
+
+                agregarMensaje(respuesta + fuentesHTML, 'bot');
+            })
+            .catch(() => {
+                document.getElementById('typingIndicator').classList.remove('active');
+                document.getElementById('errorMsg').classList.add('active');
+            })
+            .finally(() => {
+                document.getElementById('enviarBtn').disabled = false;
+            });
+        }
+
+        function agregarMensaje(texto, tipo) {
+            const chat = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = 'message ' + tipo;
+            div.innerHTML = '<div class="bubble">' + texto + '</div>';
+            chat.appendChild(div);
+
+            // Scroll automatico al ultimo mensaje
+            chat.scrollTop = chat.scrollHeight;
+        }
+    </script>
+</body>
+</html>
