@@ -215,7 +215,10 @@ challenge-alura-agente/
 │   ├── Preguntas_Frecuentes_sobre_Metodos_de_Pago_de_BimBam_Buy.pdf
 │   └── Manual_de_Garantia_de_Productos_de_BimBam_Buy.pdf
 ├── data/                        # (vacio, para futuros datasets)
-├── tests/                       # (vacio, para pruebas unitarias)
+├── tests/                       # Pruebas unitarias
+│   └── test_rag_agent.py       # 10 tests del agente RAG
+├── Dockerfile                   # Para deploy con Docker
+├── deploy_oci.ps1              # Script guia de deploy en OCI
 ├── generate_docs.py             # Script para generar los PDFs
 ├── requirements.txt             # Dependencias del proyecto
 ├── .gitignore                   # Archivos ignorados por Git
@@ -224,35 +227,113 @@ challenge-alura-agente/
 
 ---
 
-## ☁️ Evidencia de Deploy en OCI
+## ☁️ Guia de Deploy en OCI (Oracle Cloud Infrastructure)
 
-> **Nota:** Esta seccion se completa despues del deploy en Oracle Cloud Infrastructure (OCI).
+Sigue estos pasos para desplegar la aplicacion en OCI gratis (Free Tier).
 
-### Instrucciones para deploy en OCI:
+### Paso 1: Crear una instancia de Compute
 
-1. Crear una instancia de compute en OCI (Ubuntu 22.04+)
-2. Conectarse via SSH y clonar el repositorio
-3. Instalar Python y las dependencias
-4. Ejecutar la aplicacion con Gunicorn para produccion:
+1. Ve a [cloud.oracle.com](https://cloud.oracle.com) e inicia sesion
+2. Menu ☰ -> Compute -> Instances -> Create Instance
+3. Configura:
+   - **Name**: `bimbam-buy-agent`
+   - **Image**: Canary Linux 9 (o Ubuntu 22.04)
+   - **Shape**: `VM.Standard.E2.1.Micro` (SIEMPRE GRATIS)
+   - **SSH Keys**: Sube tu llave publica SSH
+   - **Boot volume**: Default (50 GB)
+4. Haz click en **Create**
+
+### Paso 2: Configurar firewall (Security List)
+
+1. Menu ☰ -> Networking -> Virtual Cloud Networks
+2. Selecciona la VCN de tu instancia
+3. Click en **Security Lists** (a la izquierda)
+4. Click en la Security List default
+5. **Add Ingress Rules**:
+   - Source Type: CIDR
+   - Source CIDR: `0.0.0.0/0`
+   - Destination Port Range: `8080`
+   - Protocol: TCP
+   - Description: `BimBam Buy Agent`
+
+### Paso 3: Conectarse por SSH y desplegar
 
 ```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8080 app.app:app
+# Conectate a tu instancia
+ssh -i ~/.ssh/tu_llave opc@<IP_PUBLICA_DE_TU_INSTANCIA>
+
+# Actualizar e instalar dependencias
+sudo dnf update -y
+sudo dnf install -y python3 python3-pip git
+
+# Clonar el repositorio
+git clone https://github.com/JazMendez17/challenge-alura-agente.git
+cd challenge-alura-agente
+
+# Instalar dependencias Python
+pip3 install -r requirements.txt
+
+# Probar que funciona
+python3 app/app.py
+# Abre en tu navegador: http://<IP_PUBLICA>:5000
 ```
 
-5. Configurar el firewall para permitir trafico en el puerto 8080
-6. (Opcional) Usar Nginx como proxy reverso
+### Paso 4: Crear servicio permanente (systemd)
+
+Para que la app corra siempre incluso si te desconectas:
+
+```bash
+# Crea el archivo de servicio
+sudo tee /etc/systemd/system/bimbam.service << 'EOF'
+[Unit]
+Description=BimBam Buy RAG Agent
+After=network.target
+
+[Service]
+User=opc
+WorkingDirectory=/home/opc/challenge-alura-agente
+ExecStart=/usr/bin/python3 /home/opc/challenge-alura-agente/app/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Activar e iniciar el servicio
+sudo systemctl daemon-reload
+sudo systemctl enable bimbam
+sudo systemctl start bimbam
+sudo systemctl status bimbam
+```
+
+### Paso 5: (Opcional) Usar Docker
+
+```bash
+# Instalar Docker
+sudo dnf install -y docker
+sudo systemctl start docker
+
+# Construir y ejecutar
+sudo docker build -t bimbam-agent .
+sudo docker run -d -p 8080:8080 --name bimbam --restart always bimbam-agent
+```
+
+### Paso 6: Verificar
+
+1. Abre en tu navegador: `http://<IP_PUBLICA_DE_TU_INSTANCIA>:8080`
+2. Prueba preguntando: "Cual es la politica de reembolso?"
+3. Toma una captura de pantalla
 
 ### Link de la aplicacion desplegada:
 
 ```
-[PENDIENTE - Agregar URL de OCI]
+http://<IP_PUBLICA_DE_TU_INSTANCIA>:8080
 ```
 
 ### Captura de pantalla:
 
 ```
-[PENDIENTE - Agregar screenshot de la app funcionando en OCI]
+[PEGA AQUI TU CAPTURA DE PANTALLA MOSTRANDO LA APP FUNCIONANDO]
 ```
 
 ---
